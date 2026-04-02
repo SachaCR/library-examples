@@ -1,0 +1,5 @@
+- [ ] A use case to loan a book
+- [ ] A use case to return the book
+- [ ] A use case to declare the book lost
+- [ ] A use case to declare the loan as stolen
+- [ ] A use case to add a book to the collection
