@@ -5,6 +5,10 @@ import {
   BookLostCannotBeLoanedError,
   BookNotFoundError,
 } from "../entities/book/errors/book.errors";
+import {
+  MAX_ACTIVE_LOANS_PER_MEMBER,
+  MemberActiveLoanLimitExceededError,
+} from "../entities/loan/errors/loan.errors";
 import { LibraryCollection } from "../repositories/libraryCollection.repository";
 import { LoanRegister } from "../repositories/loanRegister.repository";
 
@@ -43,6 +47,16 @@ export async function registerLoan(
 
   if (outstandingLookup.value !== undefined) {
     return err(new BookAlreadyOnLoanError(bookId));
+  }
+
+  const activeForMember = await loanRegister.findActiveLoansForMember(memberId);
+
+  if (activeForMember.isErr()) {
+    return err(activeForMember.error);
+  }
+
+  if (activeForMember.value.length >= MAX_ACTIVE_LOANS_PER_MEMBER) {
+    return err(new MemberActiveLoanLimitExceededError(memberId));
   }
 
   const { loan, event } = Loan.create({ bookId, memberId });

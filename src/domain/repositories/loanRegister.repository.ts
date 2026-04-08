@@ -18,4 +18,18 @@ export class LoanRegister extends InMemoryRepository<Loan, LoanEvent> {
 
     return ok(undefined);
   }
+
+  async findActiveLoansForMember(
+    memberId: string,
+  ): Promise<Result<Loan[], Error>> {
+    const loans: Loan[] = [];
+
+    for (const [id, state] of this.store) {
+      if (state.memberId === memberId && state.returnedAt === null) {
+        loans.push(Loan.fromState(id, state));
+      }
+    }
+
+    return ok(loans);
+  }
 }

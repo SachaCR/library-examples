@@ -1,5 +1,20 @@
 import { DomainError } from "ontologic";
 
+export const MAX_ACTIVE_LOANS_PER_MEMBER = 3;
+
+export class MemberActiveLoanLimitExceededError extends DomainError<
+  "MEMBER_ACTIVE_LOAN_LIMIT_EXCEEDED",
+  { memberId: string; limit: number }
+> {
+  constructor(memberId: string) {
+    super({
+      name: "MEMBER_ACTIVE_LOAN_LIMIT_EXCEEDED",
+      message: `Member has reached the active loan limit (${MAX_ACTIVE_LOANS_PER_MEMBER} books)`,
+      context: { memberId, limit: MAX_ACTIVE_LOANS_PER_MEMBER },
+    });
+  }
+}
+
 export class LoanNotFoundError extends DomainError<
   "LOAN_NOT_FOUND",
   { loanId: string }

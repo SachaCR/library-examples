@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { declareBookLost } from "../declareBookLost.use-case";
 import { registerLoan } from "../registerLoan.use-case";
+import { recordBookReturn } from "../recordBookReturn.use-case";
+import { MAX_ACTIVE_LOANS_PER_MEMBER } from "../../entities/loan/errors/loan.errors";
 import { LibraryCollection } from "../../repositories/libraryCollection.repository";
 import { LoanRegister } from "../../repositories/loanRegister.repository";
 import { addCopyToCatalog } from "./helpers";
@@ -143,6 +145,157 @@ describe("Given a copy already has an open loan in the register", () => {
       if (outcome.isErr()) {
         expect(outcome.error.name).toBe("BOOK_ALREADY_ON_LOAN");
       }
+    });
+  });
+});
+
+describe("Given a member already has two active loans on two different copies", () => {
+  let collection: LibraryCollection;
+  let loanRegister: LoanRegister;
+  const patronId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+  let bookIdThird: string;
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-08-15T09:00:00.000Z"));
+    collection = new LibraryCollection();
+    loanRegister = new LoanRegister();
+    const book1 = await addCopyToCatalog(collection, { isbn: "978-7777777771" });
+    const book2 = await addCopyToCatalog(collection, { isbn: "978-7777777772" });
+    bookIdThird = await addCopyToCatalog(collection, { isbn: "978-7777777773" });
+    const first = await registerLoan(
+      { bookId: book1, memberId: patronId },
+      { libraryCollection: collection, loanRegister },
+    );
+    const second = await registerLoan(
+      { bookId: book2, memberId: patronId },
+      { libraryCollection: collection, loanRegister },
+    );
+    expect(first.isOk()).toBe(true);
+    expect(second.isOk()).toBe(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe("When they borrow a third copy", () => {
+    let outcome: Awaited<ReturnType<typeof registerLoan>>;
+
+    beforeEach(async () => {
+      outcome = await registerLoan(
+        { bookId: bookIdThird, memberId: patronId },
+        { libraryCollection: collection, loanRegister },
+      );
+    });
+
+    it("Then the loan is accepted (under the limit)", () => {
+      expect(outcome.isOk()).toBe(true);
+    });
+  });
+});
+
+describe("Given a member already has three active loans on three different copies", () => {
+  let collection: LibraryCollection;
+  let loanRegister: LoanRegister;
+  const patronId = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+  let bookIdFourth: string;
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-09-01T10:00:00.000Z"));
+    collection = new LibraryCollection();
+    loanRegister = new LoanRegister();
+    const books = await Promise.all([
+      addCopyToCatalog(collection, { isbn: "978-8888888881" }),
+      addCopyToCatalog(collection, { isbn: "978-8888888882" }),
+      addCopyToCatalog(collection, { isbn: "978-8888888883" }),
+    ]);
+    bookIdFourth = await addCopyToCatalog(collection, { isbn: "978-8888888884" });
+    for (const bookId of books) {
+      const r = await registerLoan(
+        { bookId, memberId: patronId },
+        { libraryCollection: collection, loanRegister },
+      );
+      expect(r.isOk()).toBe(true);
+    }
+    const active = await loanRegister.findActiveLoansForMember(patronId);
+    expect(active.isOk() && active.value.length).toBe(MAX_ACTIVE_LOANS_PER_MEMBER);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe("When they try to borrow a fourth copy", () => {
+    let outcome: Awaited<ReturnType<typeof registerLoan>>;
+
+    beforeEach(async () => {
+      outcome = await registerLoan(
+        { bookId: bookIdFourth, memberId: patronId },
+        { libraryCollection: collection, loanRegister },
+      );
+    });
+
+    it("Then the use case refuses with MEMBER_ACTIVE_LOAN_LIMIT_EXCEEDED", () => {
+      expect(outcome.isErr()).toBe(true);
+      if (outcome.isErr()) {
+        expect(outcome.error.name).toBe("MEMBER_ACTIVE_LOAN_LIMIT_EXCEEDED");
+      }
+    });
+  });
+});
+
+describe("Given a member has three active loans and returns one", () => {
+  let collection: LibraryCollection;
+  let loanRegister: LoanRegister;
+  const patronId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+  let bookIdFourth: string;
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-10-01T11:00:00.000Z"));
+    collection = new LibraryCollection();
+    loanRegister = new LoanRegister();
+    const books = await Promise.all([
+      addCopyToCatalog(collection, { isbn: "978-9999999991" }),
+      addCopyToCatalog(collection, { isbn: "978-9999999992" }),
+      addCopyToCatalog(collection, { isbn: "978-9999999993" }),
+    ]);
+    bookIdFourth = await addCopyToCatalog(collection, { isbn: "978-9999999994" });
+    for (const bookId of books) {
+      const r = await registerLoan(
+        { bookId, memberId: patronId },
+        { libraryCollection: collection, loanRegister },
+      );
+      expect(r.isOk()).toBe(true);
+    }
+    const active = await loanRegister.findActiveLoansForMember(patronId);
+    expect(active.isOk()).toBe(true);
+    if (!active.isOk()) return;
+    const returned = await recordBookReturn(
+      { loanId: active.value[0].id() },
+      { loanRegister },
+    );
+    expect(returned.isOk()).toBe(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe("When they borrow another copy", () => {
+    let outcome: Awaited<ReturnType<typeof registerLoan>>;
+
+    beforeEach(async () => {
+      outcome = await registerLoan(
+        { bookId: bookIdFourth, memberId: patronId },
+        { libraryCollection: collection, loanRegister },
+      );
+    });
+
+    it("Then the loan is accepted (returned loans do not count toward the limit)", () => {
+      expect(outcome.isOk()).toBe(true);
     });
   });
 });

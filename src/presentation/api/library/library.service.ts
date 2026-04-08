@@ -11,6 +11,7 @@ import { LoanRegister } from "../../../domain/repositories/loanRegister.reposito
 import { addBook as addBookUseCase } from "../../../domain/use-cases/addBook.use-case";
 import { declareBookLost as declareBookLostUseCase } from "../../../domain/use-cases/declareBookLost.use-case";
 import { recordBookReturn as recordBookReturnUseCase } from "../../../domain/use-cases/recordBookReturn.use-case";
+import { listOutstandingLoansForMember as listOutstandingLoansForMemberUseCase } from "../../../domain/use-cases/listOutstandingLoansForMember.use-case";
 import { registerLoan as registerLoanUseCase } from "../../../domain/use-cases/registerLoan.use-case";
 import { searchBooks as searchBooksUseCase } from "../../../domain/use-cases/searchBooks.use-case";
 
@@ -144,5 +145,23 @@ export class LibraryService {
         ...loan.readState(),
       })),
     });
+  }
+
+  async listOutstandingLoansForMember(
+    memberId: string,
+  ): Promise<
+    Result<
+      { memberId: string; loans: Array<{ id: string } & LoanState> },
+      Error
+    >
+  > {
+    const result = await listOutstandingLoansForMemberUseCase(
+      { memberId },
+      { loanRegister: this.loanRegister },
+    );
+    if (result.isErr()) {
+      return err(result.error);
+    }
+    return ok({ memberId, loans: result.value });
   }
 }

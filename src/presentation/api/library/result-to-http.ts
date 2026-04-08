@@ -16,6 +16,7 @@ const CONFLICT_NAMES = new Set([
   "BOOK_ALREADY_DECLARED_LOST",
   "LOAN_ALREADY_RETURNED",
   "BOOK_LOST_CANNOT_BE_LOANED",
+  "MEMBER_ACTIVE_LOAN_LIMIT_EXCEEDED",
 ]);
 
 function errorName(error: Error): string {

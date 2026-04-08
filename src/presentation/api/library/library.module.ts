@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { AddBookController } from "./controllers/add-book.controller";
 import { DeclareBookLostController } from "./controllers/declare-book-lost.controller";
 import { ListBooksController } from "./controllers/list-books.controller";
+import { ListOutstandingLoansForMemberController } from "./controllers/list-outstanding-loans-for-member.controller";
 import { ListLoansController } from "./controllers/list-loans.controller";
 import { RecordBookReturnController } from "./controllers/record-book-return.controller";
 import { RegisterLoanController } from "./controllers/register-loan.controller";
@@ -19,6 +20,7 @@ import { LibraryService } from "./library.service";
     AddBookController,
     DeclareBookLostController,
     ListLoansController,
+    ListOutstandingLoansForMemberController,
     RegisterLoanController,
     RecordBookReturnController,
   ],

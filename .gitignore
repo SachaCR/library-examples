@@ -24,6 +24,7 @@ coverage
 # Vitest HTML reporter (@vitest/ui)
 html
 *.lcov
+reports/
 
 # nyc test coverage
 .nyc_output
