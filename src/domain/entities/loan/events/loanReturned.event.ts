@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { DomainEvent } from "ontologic";
 
 export interface LoanReturnedPayload {
@@ -13,5 +14,22 @@ export class LoanReturnedEvent extends DomainEvent<
 > {
   constructor(entityId: string, payload: LoanReturnedPayload) {
     super({ name: "LOAN_RETURNED", version: 1, entityId, payload });
+  }
+
+  static validate(event: unknown): LoanReturnedEvent {
+    const schema = z.object({
+      name: z.literal("LOAN_RETURNED"),
+      version: z.literal(1),
+      entityId: z.string(),
+      payload: z.object({
+        bookId: z.string(),
+        memberId: z.string(),
+        returnedAt: z.string(),
+      }),
+    });
+
+    const result = schema.parse(event);
+
+    return new LoanReturnedEvent(result.entityId, result.payload);
   }
 }

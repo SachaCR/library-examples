@@ -1,37 +1,64 @@
-import { DomainEventBusPublisher } from "ontologic";
+import { DomainEventBusPublisher, EventWithMetadata } from "ontologic";
 import { LibraryCollection } from "../domain/repositories/libraryCollection.repository";
 import { BookEvent } from "../domain/entities/book";
+import { LoanRegister } from "../domain/repositories/loanRegister.repository";
+import { LoanEvent } from "../domain/entities/loan";
 
 // Message Relay
 export function buildMessageRelay(
   libraryCollection: LibraryCollection,
-  publisher: DomainEventBusPublisher<BookEvent>,
+  loanRegister: LoanRegister,
+  publisher: DomainEventBusPublisher<BookEvent | LoanEvent>,
 ) {
-  return async function messageRelay(entityId: string) {
-    // TODO: lock this entityId
+  return async function messageRelay(entityId: string, entityName: string) {
+    // TODO: lock this entityId / entityName
 
     try {
-      const lastEventIdIHavePublished = ""; // TODO: await getLastEventID(entityId)
+      let eventsToPublish: EventWithMetadata<BookEvent | LoanEvent>[];
 
-      const result = await libraryCollection.getEventsAfter(
-        entityId,
-        lastEventIdIHavePublished,
-      );
+      switch (entityName) {
+        case "BOOK":
+          const lastBookEventIdIHavePublished = ""; // TODO: await getLastEventID(entityId, entityName)
 
-      if (result.isErr()) {
-        throw result.error;
+          const resultBook = await libraryCollection.getEventsAfter(
+            entityId,
+            lastBookEventIdIHavePublished,
+          );
+
+          if (resultBook.isErr()) {
+            throw resultBook.error;
+          }
+
+          eventsToPublish = resultBook.value;
+          break;
+
+        case "LOAN":
+          const lastEventIdIHavePublished = ""; // TODO: await getLastEventID(entityId, entityName)
+
+          const result = await loanRegister.getEventsAfter(
+            entityId,
+            lastEventIdIHavePublished,
+          );
+
+          if (result.isErr()) {
+            throw result.error;
+          }
+
+          eventsToPublish = result.value;
+          break;
+
+        default:
+          throw new Error("UNKNOWN ENTITY TYPE");
       }
 
-      const eventToPublish = result.value;
-
-      for (let i = 0; i < eventToPublish.length; i++) {
-        const { event, metadata } = eventToPublish[i];
+      for (let i = 0; i < eventsToPublish.length; i++) {
+        const { event, metadata } = eventsToPublish[i];
         await publisher.publish(event, metadata);
 
-        // TODO: await updateLastEventPublished(eventId);
+        // TODO: await updateLastEventPublished(eventId, entityId, entityName);
       }
     } finally {
-      // TODO: remove lock
+      // TODO: remove lock entityId / entityName
     }
   };
 }
