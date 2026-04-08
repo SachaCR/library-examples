@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { DomainEntity } from "ontologic";
+import { DomainEntity, Result, err, ok } from "ontologic";
+import { BookAlreadyDeclaredLostError } from "./errors/book.errors";
 import { BookCreatedEvent } from "./events/bookCreated.event";
 import { BookLostEvent } from "./events/bookLost.event";
 
@@ -40,8 +41,15 @@ export class Book extends DomainEntity<BookState> {
     };
   }
 
-  declareLost(): BookLostEvent {
-    this.state.lost = true;
-    return new BookLostEvent(this.id());
+  declareLost(): Result<BookLostEvent, BookAlreadyDeclaredLostError> {
+    const state = this.readState();
+
+    if (state.lost) {
+      return err(new BookAlreadyDeclaredLostError(this.id()));
+    }
+
+    this.state = { ...state, lost: true };
+
+    return ok(new BookLostEvent(this.id()));
   }
 }

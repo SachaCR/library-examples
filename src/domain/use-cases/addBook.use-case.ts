@@ -2,7 +2,7 @@ import { err, ok, Result } from "ontologic";
 import { Book, BookState } from "../entities/book";
 import { LibraryCollection } from "../repositories/libraryCollection.repository";
 
-export async function abbBook(
+export async function addBook(
   bookData: {
     title: string;
     author: string;

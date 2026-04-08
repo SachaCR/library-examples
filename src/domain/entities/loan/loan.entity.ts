@@ -14,37 +14,12 @@ import { LoanReturnedEvent } from "./events/loanReturned.event";
 
 export type LoanEvent = LoanCreatedEvent | LoanReturnedEvent;
 
-interface LoanState {
+export interface LoanState {
   bookId: string;
   memberId: string;
   loanDate: string;
   dueDate: string;
   returnedAt: string | null;
-}
-
-const dueDateAfterLoanDate = new BaseDomainInvariant<LoanState>(
-  "Due date must be after loan date",
-  (state) => new Date(state.dueDate) > new Date(state.loanDate),
-);
-
-const returnDateAfterLoanDate = new BaseDomainInvariant<LoanState>(
-  "Return date must be after loan date",
-  (state) =>
-    state.returnedAt === null ||
-    new Date(state.returnedAt) >= new Date(state.loanDate),
-);
-
-export class LoanAlreadyReturnedError extends DomainError<
-  "LOAN_ALREADY_RETURNED",
-  { loanId: string }
-> {
-  constructor(loanId: string) {
-    super({
-      name: "LOAN_ALREADY_RETURNED",
-      message: `Loan has already been returned`,
-      context: { loanId },
-    });
-  }
 }
 
 export class Loan extends DomainEntity<LoanState> {
@@ -56,20 +31,30 @@ export class Loan extends DomainEntity<LoanState> {
     return new Loan(id, state);
   }
 
-  static create(params: {
-    bookId: string;
-    memberId: string;
-    loanDate: string;
-    dueDate: string;
-  }): { loan: Loan; event: LoanCreatedEvent } {
+  static create(params: { bookId: string; memberId: string }): {
+    loan: Loan;
+    event: LoanCreatedEvent;
+  } {
+    const { bookId, memberId } = params;
+
+    const loanDate = new Date();
+    const { dueDate } = Loan.calculateDueDate(loanDate);
+
     const id = randomUUID();
-    const state: LoanState = { ...params, returnedAt: null };
+
+    const state: LoanState = {
+      bookId,
+      memberId,
+      loanDate: loanDate.toISOString(),
+      dueDate: dueDate.toISOString(),
+      returnedAt: null,
+    };
 
     const event = new LoanCreatedEvent(id, {
-      bookId: params.bookId,
-      memberId: params.memberId,
-      loanDate: params.loanDate,
-      dueDate: params.dueDate,
+      bookId,
+      memberId,
+      loanDate: loanDate.toISOString(),
+      dueDate: dueDate.toISOString(),
     });
 
     return {
@@ -96,5 +81,39 @@ export class Loan extends DomainEntity<LoanState> {
     });
 
     return ok(event);
+  }
+
+  static calculateDueDate(startDate: Date): { dueDate: Date } {
+    const dueDate = new Date(startDate);
+    dueDate.setUTCDate(dueDate.getUTCDate() + STANDARD_LOAN_LENGTH_DAYS);
+    return { dueDate };
+  }
+}
+
+/** Lending policy: calendar days from loan start until the copy is due back. */
+const STANDARD_LOAN_LENGTH_DAYS = 21;
+
+const dueDateAfterLoanDate = new BaseDomainInvariant<LoanState>(
+  "Due date must be after loan date",
+  (state) => new Date(state.dueDate) > new Date(state.loanDate),
+);
+
+const returnDateAfterLoanDate = new BaseDomainInvariant<LoanState>(
+  "Return date must be after loan date",
+  (state) =>
+    state.returnedAt === null ||
+    new Date(state.returnedAt) >= new Date(state.loanDate),
+);
+
+export class LoanAlreadyReturnedError extends DomainError<
+  "LOAN_ALREADY_RETURNED",
+  { loanId: string }
+> {
+  constructor(loanId: string) {
+    super({
+      name: "LOAN_ALREADY_RETURNED",
+      message: `Loan has already been returned`,
+      context: { loanId },
+    });
   }
 }
