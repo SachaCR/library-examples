@@ -42,13 +42,12 @@ export class Book extends DomainEntity<BookState> {
   }
 
   declareLost(): Result<BookLostEvent, BookAlreadyDeclaredLostError> {
-    const state = this.readState();
 
-    if (state.lost) {
+    if (this.state.lost) {
       return err(new BookAlreadyDeclaredLostError(this.id()));
     }
 
-    this.state = { ...state, lost: true };
+    this.state.lost = true;
 
     return ok(new BookLostEvent(this.id()));
   }

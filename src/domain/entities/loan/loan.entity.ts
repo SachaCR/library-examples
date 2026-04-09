@@ -22,6 +22,9 @@ export interface LoanState {
   returnedAt: string | null;
 }
 
+/** Lending policy: calendar days from loan start until the copy is due back. */
+const STANDARD_LOAN_LENGTH_DAYS = 21;
+
 export class Loan extends DomainEntity<LoanState> {
   private constructor(id: string, state: LoanState) {
     super(id, state, [dueDateAfterLoanDate, returnDateAfterLoanDate]);
@@ -90,14 +93,13 @@ export class Loan extends DomainEntity<LoanState> {
   }
 }
 
-/** Lending policy: calendar days from loan start until the copy is due back. */
-const STANDARD_LOAN_LENGTH_DAYS = 21;
-
+// TODO: This should be under an invariants directory
 const dueDateAfterLoanDate = new BaseDomainInvariant<LoanState>(
   "Due date must be after loan date",
   (state) => new Date(state.dueDate) > new Date(state.loanDate),
 );
 
+// TODO: This should be under an invariants directory
 const returnDateAfterLoanDate = new BaseDomainInvariant<LoanState>(
   "Return date must be after loan date",
   (state) =>
@@ -105,6 +107,7 @@ const returnDateAfterLoanDate = new BaseDomainInvariant<LoanState>(
     new Date(state.returnedAt) >= new Date(state.loanDate),
 );
 
+// TODO: This should be under an invariant directory
 export class LoanAlreadyReturnedError extends DomainError<
   "LOAN_ALREADY_RETURNED",
   { loanId: string }
