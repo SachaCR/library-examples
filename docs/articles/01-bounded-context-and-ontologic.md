@@ -1,25 +1,25 @@
 # Modeling a library domain with Ontologic — Part 1: From the librarian’s problem to `Book` and events
 
-> **Suggested title for [Dev.to](https://dev.to):** *Modeling a library in TypeScript (1/n): paper register → entities, events, and `Result`*  
+> **Suggested title for [Dev.to](https://dev.to):** _Modeling a library in TypeScript (1/n): paper register → entities, events, and `Result`_  
 > (You can shorten the slug; the H1 above works as the post headline.)
 
-This is the **first article in a hands-on series** about shaping a real-world–ish problem into code using **[Ontologic](https://www.npmjs.com/package/ontologic)** (TypeScript helpers for entities, domain events, domain errors, `Result`, repositories, and optional event-bus wiring—not a framework that owns your folders). Each installment focuses on **one main idea** and points to the **[library-examples](https://github.com/SachaCR/library-examples)** companion repo so you can read, run, and change the code yourself. The full sequence of topics lives in the repo’s [**series outline**](https://github.com/SachaCR/library-examples/blob/main/docs/ontologic-series-outline.md).
+This is the **first article in a hands-on series** about shaping a real-world kind of problem into code using **[Ontologic](https://www.npmjs.com/package/ontologic)**. Each article focuses on **one main idea** and points to the **[library-examples](https://github.com/SachaCR/library-examples)** repo so you can read, run, and change the code yourself. The full sequence of topics lives in the repo’s [**series outline**](https://github.com/SachaCR/library-examples/blob/main/docs/ontologic-series-outline.md).
 
-**In this article** we stay close to the **problem**: a small library moving off a paper register. We derive use cases and rules in plain language, spot **Book** and **Loan** as things with lifecycles, then model **`BookState`**, a **`Book`** extending `DomainEntity`, **`BookCreatedEvent`** with **`static create`** and a **private constructor**, and finally **`declareLost`** using **domain errors** and **`Result`**. **Next up** (Article 2 in the outline): how we split **`domain`**, **`presentation`**, and **`infrastructure`** in the repo and why domain code never imports your web framework.
+**In this article** we stay close to the **problem**: a small library moving off a paper register. We derive use cases and rules in plain language, spot **Book** and **Loan** as things with lifecycles, then model our first **Domain Entity** the `Book`.
 
 ---
 
-## Start With The Why
+## From the librarian’s problem to modeling
 
-Imagine you work with a **small town library** that still runs lending off a **paper register**. Staff write down who borrowed which book, when it is due, and when it came back. Searching the catalogue means walking the shelves or flipping a card file. They want to **digitize** that experience: one place to record copies, find books, and track loans—without changing *how they think* about the work.
+Imagine you work with a **small town library** that still runs lending off a **paper register**. Staff write down who borrowed which book, when it is due, and when it came back. Searching the catalogue means walking the shelves or flipping a card file. They want to **digitize** that experience: one place to record copies, find books, and track loans.
 
-This article stays in that world: **what the library needs**. We are not coding yet naming folders or installing packages. The goal is to notice, together, that the language of the business already points toward how we might model the system later.
+We are not coding yet naming folders or installing packages. The goal is to notice, together, that the language of the business already points toward how we might model the system later.
 
 ---
 
 ## What the app should help them do
 
-If we listen to how they describe their day, we hear **things staff want to do** with the system. For our teaching project, we narrow that to a manageable set:
+If we listen to how they describe their day, we hear the Staff talking about `Books`, `ISBN`, `Loans` and `Members`. For our teaching project, we narrow that to a manageable set of use cases:
 
 - **Add a book** to their collection when new books arrive (title, author, ISBN, and so on).
 - **Search for a book** the collection when a library member asks for a book by title or author.
@@ -54,11 +54,11 @@ Read the use cases again and notice the **nouns** that are used.
 
 - A **Book** is added once, can be found, can be marked lost, and can be tied to a loan. It has a **lifecycle**: it exists over time, and its state (available, out, lost) matters.
 
-- A **Loan** is opened, then either **closed** by a return or left **open** until then. 
+- A **Loan** is opened, then either **closed** by a return or left **open** until then.
 
-When a concept has **identity** (“which book?”, “which loan?”) and **state that evolves** over its life, it is a strong candidate to model as an **Entity**. 
+When a concept has **identity** (“which book?”, “which loan?”) and **state that evolves** over its life, it is a strong candidate to model as an **Entity**.
 
-By contrast, a **member** in our example repo stays thin: we only need an identifier (like a library card number) to know *who* borrowed. We are not modeling their address, fines, or reading history here. That keeps the example small; a real system might later promote “member” to its own entity with its own rules.
+By contrast, a **member** in our example repo stays thin: we only need an identifier (like a library card number) to know _who_ borrowed. We are not modeling their address, fines, or reading history here. That keeps the example small; a real system might later promote “member” to its own entity with its own rules.
 
 So far, **discovered from the story**: at least **Book** (one row per copy we track) and **Loan** as entities worth modeling explicitly.
 
@@ -95,11 +95,11 @@ export interface BookState {
 }
 ```
 
-Nothing clever yet: **state** is just the data we agree represents “a book *as we know it right now*.”
+Nothing clever yet: **state** is just the data we agree represents “a book _as we know it right now_.”
 
 ## Turning state into a `DomainEntity`
 
-Next we declare a class `Book` that **extends** `DomainEntity<BookState>`. 
+Next we declare a class `Book` that **extends** `DomainEntity<BookState>`.
 Ontologic gives us a simple way model an **Entity** and encapsulate it's internal **State**.
 
 ```typescript
@@ -122,13 +122,13 @@ If you keep talking with the librarian, they might mention that they **track how
 
 So when we **create** a `Book` in the code, we must **emit** that event in the same move as building the entity. Anything that “adds a book” without producing the event could break the librarian’s monthly picture.
 
-In **JavaScript and TypeScript**, a **constructor cannot return anything other than the instance** (or throw). The expression `new Book(...)` always evaluates to the **`Book` object**. You cannot type a constructor so callers get both the entity and its `BookCreatedEvent` from a single `new`. 
+In **JavaScript and TypeScript**, a **constructor cannot return anything other than the instance** (or throw). The expression `new Book(...)` always evaluates to the **`Book` object**. You cannot type a constructor so callers get both the entity and its `BookCreatedEvent` from a single `new`.
 
 You might try to stash the event in the entity's state (that's a path I've explored at some point) but it **pollutes** the state and requires developers to remember they need to go fetch the event from the state afterwards. I think it is more explicit if the entities methods directly returns a **domain event** as a consequence of a command/mutation. It makes it harder to forget.
 
 A good solution to workaround this limitation of the constructor is to **hide** construction behind a **`private constructor`**: only methods **inside** the class may call `new Book(...)`. We expose **`static create(...)`**, which allocates id, builds initial state, constructs the book **once**, builds **`BookCreatedEvent`**, and returns **both** in one object—something the language allows for ordinary methods but not for `new`.
 
-This technique also allows to name the creation logic with a domain term if there is one. Here I chose `create` for simplicity but we could go deeper in the domain modeling with something like `Book.createNewBookToRegister()`. 
+This technique also allows to name the creation logic with a domain term if there is one. Here I chose `create` for simplicity but we could go deeper in the domain modeling with something like `Book.createNewBookToRegister()`.
 
 ```typescript
 import { randomUUID } from "node:crypto";
@@ -136,7 +136,6 @@ import { DomainEntity } from "ontologic";
 import { BookCreatedEvent } from "./events/bookCreated.event";
 
 export class Book extends DomainEntity<BookState> {
-
   private constructor(id: string, state: BookState) {
     super(id, state);
   }
@@ -173,7 +172,7 @@ await libraryCollection.saveWithEvents(book, event);
 
 So the private constructor is not secrecy for its own sake; it is a **discipline**: new books always go through `create` and always carry their **creation event**.
 
-Notice that you can perfectly keep a classic constructor and not generate any domain event if **your domains** don't need to. Ontologic tries to give you the maximum freedom on **How** you do things. 
+Notice that you can perfectly keep a classic constructor and not generate any domain event if **your domains** don't need to. Ontologic tries to give you the maximum freedom on **How** you do things.
 
 ---
 
@@ -183,9 +182,9 @@ A useful first behavior is **mark this book as lost**. The business rule is simp
 
 Not every refusal is a **bug** or an **error**. A staff member might submit “declare lost” twice, or two desks might race the same request. The library’s answer “this book is **already** lost” is a **normal, valid business outcome**, not a crashed server or a programmer mistake. The code should represent that outcome **on purpose**, so callers can show a clear message, log it, or map it to an HTTP response later. Throwing an exception hoping that it will be properly handled so it does not crash the full application is very risky. When an action can "fail" for business reasons it must be part of the domain model and handled explicitly.
 
-In Ontologic, a **domain error** is a small, typed value, typically a class extending `DomainError` with a stable **`name`** (for example `BOOK_ALREADY_DECLARED_LOST`), a **message** for people, and optional **context** (such as the book id). It lives in the domain layer; it is not an HTTP status and not a technical error. It says: *the operation was rejected for a reason the business understands*.
+In Ontologic, a **domain error** is a small, typed value, typically a class extending `DomainError` with a stable **`name`** (for example `BOOK_ALREADY_DECLARED_LOST`), a **message** for people, and optional **context** (such as the book id). It lives in the domain layer; it is not an HTTP status and not a technical error. It says: _the operation was rejected for a reason the business understands_.
 
-```typescript 
+```typescript
 import { DomainError } from "ontologic";
 
 export class BookAlreadyDeclaredLostError extends DomainError<
@@ -237,3 +236,4 @@ We started from a **concrete situation** (paper register, digitization) and list
 ## Where to see it in the repo
 
 The `Book` entity that matches this walkthrough lives in [`src/domain/entities/book/book.entity.ts`](https://github.com/SachaCR/library-examples/blob/main/src/domain/entities/book/book.entity.ts), with `BookCreatedEvent` and `BookLostEvent` under [`src/domain/entities/book/events/`](https://github.com/SachaCR/library-examples/tree/main/src/domain/entities/book/events) and `BookAlreadyDeclaredLostError` in [`src/domain/entities/book/errors/book.errors.ts`](https://github.com/SachaCR/library-examples/blob/main/src/domain/entities/book/errors/book.errors.ts).
+

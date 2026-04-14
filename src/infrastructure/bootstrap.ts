@@ -3,25 +3,54 @@ import {
   DomainEventBusListener,
   DomainEventBusPublisher,
   InMemoryConnectors,
+  MessageRelay,
   switchGuard,
+  InMemoryMessageRelayStateRepository,
 } from "ontologic";
 
 import { LibraryCollection } from "../domain/repositories/libraryCollection.repository";
 import { LoanRegister } from "../domain/repositories/loanRegister.repository";
-import { buildMessageRelay } from "./messageRelay";
 import { BookCreatedEvent, BookLostEvent } from "../domain/entities/book";
 import { LoanCreatedEvent, LoanReturnedEvent } from "../domain/entities/loan";
 
-export async function bootstrap() {
+export async function bootstrapDependencies() {
+  // DOMAIN EVENT BUS PUBLISHER
   const eventBusConnectors = new InMemoryConnectors();
 
-  const publisher = new DomainEventBusPublisher({
+  const eventPublisher = new DomainEventBusPublisher({
     publisherConnector: eventBusConnectors.publisher,
   });
 
-  const listener = new DomainEventBusListener({
+  // DOMAIN REPOSITORY
+  const libraryCollection = new LibraryCollection();
+  const loanRegister = new LoanRegister();
+
+  // MESSAGE RELAY
+  const messageRelayRepository = new InMemoryMessageRelayStateRepository();
+
+  const bookMessageRelay = new MessageRelay(
+    libraryCollection,
+    messageRelayRepository,
+    "BOOK",
+    eventPublisher,
+  );
+
+  const loanMessageRelay = new MessageRelay(
+    loanRegister,
+    messageRelayRepository,
+    "LOAN",
+    eventPublisher,
+  );
+
+  // WIRE THE MESSAGE RELAY
+  libraryCollection.onChanges(bookMessageRelay.handler);
+  loanRegister.onChanges(loanMessageRelay.handler);
+
+  // DOMAIN EVENT BUS LISTENER
+  const eventListener = new DomainEventBusListener({
     listenerConnector: eventBusConnectors.listener,
     options: {
+      // This function should live somewhere else
       validator: (event: unknown) => {
         const namedObjectSchema = z.object({
           name: z.enum([
@@ -54,18 +83,9 @@ export async function bootstrap() {
     },
   });
 
-  const libraryCollection = new LibraryCollection();
-  const loanRegister = new LoanRegister();
-
-  // Message Relay: listen to new event and publish them
-  libraryCollection.onChanges(
-    buildMessageRelay(libraryCollection, loanRegister, publisher),
-  );
-
   return {
     loanRegister,
     libraryCollection,
-    publisher,
-    listener,
+    eventListener,
   };
 }
