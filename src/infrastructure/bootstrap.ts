@@ -40,8 +40,8 @@ export async function bootstrapDependencies() {
   );
 
   // WIRE THE MESSAGE RELAY
-  libraryCollection.onChanges(bookMessageRelay.handler);
-  loanRegister.onChanges(loanMessageRelay.handler);
+  libraryCollection.onChanges(bookMessageRelay.handler.bind(bookMessageRelay));
+  loanRegister.onChanges(loanMessageRelay.handler.bind(loanMessageRelay));
 
   // DOMAIN EVENT BUS LISTENER
   const eventListener = new DomainEventBusListener({

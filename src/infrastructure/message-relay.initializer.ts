@@ -36,8 +36,8 @@ export class MessageRelayInitializer implements OnModuleInit {
       this.publisher,
     );
 
-    this.libraryCollection.onChanges(bookRelay.handler);
+    this.libraryCollection.onChanges(bookRelay.handler.bind(bookRelay));
 
-    this.loanRegister.onChanges(loanRelay.handler);
+    this.loanRegister.onChanges(loanRelay.handler.bind(loanRelay));
   }
 }
