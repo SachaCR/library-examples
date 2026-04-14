@@ -5,7 +5,7 @@ import { BookCreatedEvent, BookLostEvent } from "../domain/entities/book";
 import { LoanCreatedEvent, LoanReturnedEvent } from "../domain/entities/loan";
 
 export function validateDomainEvent(event: unknown) {
-  const namedObjectSchema = z.object({
+  const namedObjectSchema = z.looseObject({
     name: z.enum([
       "BOOK_LOST",
       "BOOK_CREATED",
