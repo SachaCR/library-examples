@@ -32,13 +32,16 @@ export class LibraryService {
 
   private async seedFiftyRealBooksIfEmpty(): Promise<void> {
     const listed = await this.libraryCollection.list({ limit: 1, offset: 0 });
+
     if (listed.isErr() || listed.value.data.length > 0) {
       return;
     }
 
     for (const row of FIFTY_REAL_BOOKS) {
       const { book, event } = Book.create({ ...row });
+
       const saved = await this.libraryCollection.saveWithEvents(book, event);
+
       if (saved.isErr()) {
         this.logger.error(saved.error);
         return;
@@ -46,23 +49,21 @@ export class LibraryService {
     }
   }
 
-  addBook(
-    bookData: {
-      title: string;
-      author: string;
-      isbn: string;
-      category: string;
-      tags: string[];
-    },
-  ): Promise<Result<BookState, Error>> {
+  addBook(bookData: {
+    title: string;
+    author: string;
+    isbn: string;
+    category: string;
+    tags: string[];
+  }): Promise<Result<BookState, Error>> {
     return addBookUseCase(bookData, {
       libraryCollection: this.libraryCollection,
     });
   }
 
-  declareBookLost(
-    lostDeclaration: { bookId: string },
-  ): Promise<Result<BookState, Error>> {
+  declareBookLost(lostDeclaration: {
+    bookId: string;
+  }): Promise<Result<BookState, Error>> {
     return declareBookLostUseCase(lostDeclaration, {
       libraryCollection: this.libraryCollection,
     });
@@ -76,27 +77,25 @@ export class LibraryService {
     });
   }
 
-  registerLoan(
-    lendingRequest: { bookId: string; memberId: string },
-  ): Promise<Result<LoanState, Error>> {
+  registerLoan(lendingRequest: {
+    bookId: string;
+    memberId: string;
+  }): Promise<Result<LoanState, Error>> {
     return registerLoanUseCase(lendingRequest, {
       libraryCollection: this.libraryCollection,
       loanRegister: this.loanRegister,
     });
   }
 
-  recordBookReturn(
-    returnReceipt: { loanId: string },
-  ): Promise<Result<LoanState, Error>> {
+  recordBookReturn(returnReceipt: {
+    loanId: string;
+  }): Promise<Result<LoanState, Error>> {
     return recordBookReturnUseCase(returnReceipt, {
       loanRegister: this.loanRegister,
     });
   }
 
-  async listBooks(params: {
-    limit: number;
-    offset: number;
-  }): Promise<
+  async listBooks(params: { limit: number; offset: number }): Promise<
     Result<
       {
         limit: number;
@@ -120,10 +119,7 @@ export class LibraryService {
     });
   }
 
-  async listLoans(params: {
-    limit: number;
-    offset: number;
-  }): Promise<
+  async listLoans(params: { limit: number; offset: number }): Promise<
     Result<
       {
         limit: number;

@@ -19,11 +19,17 @@ export class LibraryCollection extends InMemoryRepository<Book, BookEvent> {
    * When every provided field is missing or only whitespace after trim, **no** copies are returned
    * (the full collection is never returned as a wildcard result).
    */
-  async searchBook(criteria: BookSearchCriteria): Promise<Result<Book[], Error>> {
+  async searchBook(
+    criteria: BookSearchCriteria,
+  ): Promise<Result<Book[], Error>> {
     const titleToSearch = criteria.title?.trim().toLowerCase();
     const authorToSearch = criteria.author?.trim().toLowerCase();
-    const filterByTitle = titleToSearch !== undefined && titleToSearch.length > 0;
-    const filterByAuthor = authorToSearch !== undefined && authorToSearch.length > 0;
+
+    const filterByTitle =
+      titleToSearch !== undefined && titleToSearch.length > 0;
+
+    const filterByAuthor =
+      authorToSearch !== undefined && authorToSearch.length > 0;
 
     if (!filterByTitle && !filterByAuthor) {
       return ok([]);
@@ -34,6 +40,7 @@ export class LibraryCollection extends InMemoryRepository<Book, BookEvent> {
     for (const [id, state] of this.store) {
       const titleMatches =
         filterByTitle && state.title.toLowerCase().includes(titleToSearch!);
+
       const authorMatches =
         filterByAuthor && state.author.toLowerCase().includes(authorToSearch!);
 

@@ -1,17 +1,14 @@
-import { z } from "zod";
 import {
   DomainEventBusListener,
   DomainEventBusPublisher,
   InMemoryConnectors,
   MessageRelay,
-  switchGuard,
   InMemoryMessageRelayStateRepository,
 } from "ontologic";
 
 import { LibraryCollection } from "../domain/repositories/libraryCollection.repository";
 import { LoanRegister } from "../domain/repositories/loanRegister.repository";
-import { BookCreatedEvent, BookLostEvent } from "../domain/entities/book";
-import { LoanCreatedEvent, LoanReturnedEvent } from "../domain/entities/loan";
+import { validateDomainEvent } from "./event.validator";
 
 export async function bootstrapDependencies() {
   // DOMAIN EVENT BUS PUBLISHER
@@ -49,38 +46,7 @@ export async function bootstrapDependencies() {
   // DOMAIN EVENT BUS LISTENER
   const eventListener = new DomainEventBusListener({
     listenerConnector: eventBusConnectors.listener,
-    options: {
-      // This function should live somewhere else
-      validator: (event: unknown) => {
-        const namedObjectSchema = z.object({
-          name: z.enum([
-            "BOOK_LOST",
-            "BOOK_CREATED",
-            "LOAN_CREATED",
-            "LOAN_RETURNED",
-          ]),
-        });
-
-        const namedObject = namedObjectSchema.parse(event);
-
-        switch (namedObject.name) {
-          case "BOOK_CREATED":
-            return BookCreatedEvent.validate(namedObject);
-
-          case "BOOK_LOST":
-            return BookLostEvent.validate(namedObject);
-
-          case "LOAN_CREATED":
-            return LoanCreatedEvent.validate(namedObject);
-
-          case "LOAN_RETURNED":
-            return LoanReturnedEvent.validate(namedObject);
-
-          default:
-            switchGuard(namedObject.name);
-        }
-      },
-    },
+    options: { validator: validateDomainEvent },
   });
 
   return {
