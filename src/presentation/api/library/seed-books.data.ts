@@ -352,11 +352,4 @@ export const FIFTY_REAL_BOOKS = [
     category: "non-fiction",
     tags: ["memoir", "biography"],
   },
-  {
-    title: "The Immortal Life of Henrietta Lacks",
-    author: "Rebecca Skloot",
-    isbn: "9781400052189",
-    category: "non-fiction",
-    tags: ["science", "ethics"],
-  },
 ];

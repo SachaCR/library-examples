@@ -15,7 +15,7 @@ import { LibraryService } from "./library.service";
 
 @Module({
   imports: [DomainRepositoriesModule],
-  providers: [LibraryService, BookCountService],
+  providers: [BookCountService, LibraryService],
   controllers: [
     SearchBooksController,
     ListBooksController,

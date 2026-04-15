@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Result, err, ok } from "ontologic";
 
 import { Book, BookState } from "../../../domain/entities/book";
@@ -18,13 +18,15 @@ import { searchBooks as searchBooksUseCase } from "../../../domain/use-cases/sea
 import { FIFTY_REAL_BOOKS } from "./seed-books.data";
 
 @Injectable()
-export class LibraryService {
+export class LibraryService implements OnModuleInit {
   private readonly logger = new Logger(LibraryService.name);
 
   constructor(
     private readonly libraryCollection: LibraryCollection,
     private readonly loanRegister: LoanRegister,
-  ) {
+  ) {}
+
+  onModuleInit() {
     void this.seedFiftyRealBooksIfEmpty().catch((cause: unknown) => {
       this.logger.error("Failed to seed demo catalogue", cause);
     });

@@ -1,16 +1,12 @@
 import { randomUUID } from "crypto";
 
-import {
-  BaseDomainInvariant,
-  DomainEntity,
-  DomainError,
-  Result,
-  err,
-  ok,
-} from "ontologic";
+import { DomainEntity, Result, err, ok } from "ontologic";
 
+import { LoanAlreadyReturnedError } from "./errors/loan.errors";
 import { LoanCreatedEvent } from "./events/loanCreated.event";
 import { LoanReturnedEvent } from "./events/loanReturned.event";
+import { dueDateAfterLoanDate } from "./invariants/dueDateAfterLoanDate.invariant";
+import { returnDateAfterLoanDate } from "./invariants/returnDateAfterLoanDate.invariant";
 
 export type LoanEvent = LoanCreatedEvent | LoanReturnedEvent;
 
@@ -90,33 +86,5 @@ export class Loan extends DomainEntity<LoanState> {
     const dueDate = new Date(startDate);
     dueDate.setUTCDate(dueDate.getUTCDate() + STANDARD_LOAN_LENGTH_DAYS);
     return { dueDate };
-  }
-}
-
-// TODO: This should be under an invariants directory
-const dueDateAfterLoanDate = new BaseDomainInvariant<LoanState>(
-  "Due date must be after loan date",
-  (state) => new Date(state.dueDate) > new Date(state.loanDate),
-);
-
-// TODO: This should be under an invariants directory
-const returnDateAfterLoanDate = new BaseDomainInvariant<LoanState>(
-  "Return date must be after loan date",
-  (state) =>
-    state.returnedAt === null ||
-    new Date(state.returnedAt) >= new Date(state.loanDate),
-);
-
-// TODO: This should be under an invariant directory
-export class LoanAlreadyReturnedError extends DomainError<
-  "LOAN_ALREADY_RETURNED",
-  { loanId: string }
-> {
-  constructor(loanId: string) {
-    super({
-      name: "LOAN_ALREADY_RETURNED",
-      message: `Loan has already been returned`,
-      context: { loanId },
-    });
   }
 }

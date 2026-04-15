@@ -1,7 +1,19 @@
 import { DomainError } from "ontologic";
 
-export const MAX_ACTIVE_LOANS_PER_MEMBER = 3;
+export class LoanAlreadyReturnedError extends DomainError<
+  "LOAN_ALREADY_RETURNED",
+  { loanId: string }
+> {
+  constructor(loanId: string) {
+    super({
+      name: "LOAN_ALREADY_RETURNED",
+      message: `Loan has already been returned`,
+      context: { loanId },
+    });
+  }
+}
 
+export const MAX_ACTIVE_LOANS_PER_MEMBER = 3;
 export class MemberActiveLoanLimitExceededError extends DomainError<
   "MEMBER_ACTIVE_LOAN_LIMIT_EXCEEDED",
   { memberId: string; limit: number }

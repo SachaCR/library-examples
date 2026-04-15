@@ -1,7 +1,4 @@
-# Modeling a library domain with Ontologic — Part 1: From the librarian’s problem to `Book` and events
-
-> **Suggested title for [Dev.to](https://dev.to):** _Modeling a library in TypeScript (1/n): paper register → entities, events, and `Result`_  
-> (You can shorten the slug; the H1 above works as the post headline.)
+# Modeling a domain with Ontologic — Part 1: The Librarian’s Problems
 
 This is the **first article in a hands-on series** about shaping a real-world kind of problem into code using **[Ontologic](https://www.npmjs.com/package/ontologic)**. Each article focuses on **one main idea** and points to the **[library-examples](https://github.com/SachaCR/library-examples)** repo so you can read, run, and change the code yourself. The full sequence of topics lives in the repo’s [**series outline**](https://github.com/SachaCR/library-examples/blob/main/docs/ontologic-series-outline.md).
 
@@ -100,7 +97,7 @@ Nothing clever yet: **state** is just the data we agree represents “a book _as
 ## Turning state into a `DomainEntity`
 
 Next we declare a class `Book` that **extends** `DomainEntity<BookState>`.
-Ontologic gives us a simple way model an **Entity** and encapsulate it's internal **State**.
+Ontologic gives us a simple way model to an **Entity** and encapsulate it's internal **State**.
 
 ```typescript
 import { DomainEntity } from "ontologic";
@@ -118,7 +115,7 @@ At this point we have named the **Entity** and its **State**; we still need to d
 
 ### Creating an Entity
 
-If you keep talking with the librarian, they might mention that they **track how many books are added to the collection each month** for reporting, budgets, or grants. That is a useful insight: introducing a new book is an **interesting event for the business**. In the model, this is what we call a **domain event**—in code, [`BookCreatedEvent`](https://github.com/SachaCR/library-examples/blob/main/src/domain/entities/book/events/bookCreated.event.ts) (see the class definition in the repo for the payload and `BOOK_CREATED` name).
+If you keep talking with the librarian, they might mention that they **track how many books are added to the collection each month** for reporting, budgets, or grants. That is a useful insight: introducing a new book is an **interesting event for the business**. In the model, this is what we call a **domain event**. In the code, [`BookCreatedEvent`](https://github.com/SachaCR/library-examples/blob/main/src/domain/entities/book/events/bookCreated.event.ts) (see the class definition in the repo for the payload and `BOOK_CREATED` name).
 
 So when we **create** a `Book` in the code, we must **emit** that event in the same move as building the entity. Anything that “adds a book” without producing the event could break the librarian’s monthly picture.
 
@@ -236,4 +233,3 @@ We started from a **concrete situation** (paper register, digitization) and list
 ## Where to see it in the repo
 
 The `Book` entity that matches this walkthrough lives in [`src/domain/entities/book/book.entity.ts`](https://github.com/SachaCR/library-examples/blob/main/src/domain/entities/book/book.entity.ts), with `BookCreatedEvent` and `BookLostEvent` under [`src/domain/entities/book/events/`](https://github.com/SachaCR/library-examples/tree/main/src/domain/entities/book/events) and `BookAlreadyDeclaredLostError` in [`src/domain/entities/book/errors/book.errors.ts`](https://github.com/SachaCR/library-examples/blob/main/src/domain/entities/book/errors/book.errors.ts).
-
