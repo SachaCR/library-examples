@@ -1,6 +1,6 @@
 # Modeling a domain with Ontologic — Part 1: The Librarian’s Problems
 
-This is the **first article in a hands-on series** about shaping a real-world kind of problem into code using **[Ontologic](https://www.npmjs.com/package/ontologic)**. Each article focuses on **one main idea** and points to the **[library-examples](https://github.com/SachaCR/library-examples)** repo so you can read, run, and change the code yourself. The full sequence of topics lives in the repo’s [**series outline**](https://github.com/SachaCR/library-examples/blob/main/docs/ontologic-series-outline.md).
+This is the first article in a hands-on series about shaping a real-world kind of problem into code using **[Ontologic](https://www.npmjs.com/package/ontologic)**. Each article focuses on **one main idea** and points to the **[library-examples](https://github.com/SachaCR/library-examples)** repo so you can read, run, and change the code yourself.
 
 **In this article** we stay close to the **problem**: a small library moving off a paper register. We derive use cases and rules in plain language, spot **Book** and **Loan** as things with lifecycles, then model our first **Domain Entity** the `Book`.
 
@@ -227,8 +227,6 @@ export class Book extends DomainEntity<BookState> {
 ## Wrapping up
 
 We started from a **concrete situation** (paper register, digitization) and listed **use cases** and **rules** before naming **entities** (`Book`, `Loan`) and where rules sit (**invariants** on one thing vs coordination in a **use case**). For **`Book`**, we defined **`BookState`**, wrapped it in **`DomainEntity`**, and showed why **adding a copy** must produce a **`BookCreatedEvent`**—then why **`private constructor` + `static create`** is the idiomatic TypeScript answer when the constructor cannot return `{ book, event }`. We closed with **`declareLost`**, **`DomainError`**, and **`Result`** so **expected refusals** stay in the model with **typed** failure, not untyped throws.
-
-**Next in the series:** open [**Article 2 — Folder boundaries**](https://github.com/SachaCR/library-examples/blob/main/docs/ontologic-series-outline.md) in the outline (domain vs application vs infrastructure, and why `src/domain` has zero Nest imports). If you are coding along, clone **[library-examples](https://github.com/SachaCR/library-examples)** and run `pnpm test` before the next read.
 
 ## Where to see it in the repo
 
